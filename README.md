@@ -1,12 +1,12 @@
 <div align="center">
 
-<h1>Template | Worker</h1>
+<h1>Triton Worker</h1>
 
 [![CI | Test Handler](https://github.com/runpod-workers/worker-template/actions/workflows/CI-test_handler.yml/badge.svg)](https://github.com/runpod-workers/worker-template/actions/workflows/CI-test_handler.yml)
 &nbsp;
 [![CD | Build-Test-Release](https://github.com/runpod-workers/worker-template/actions/workflows/build-test-release.yml/badge.svg)](https://github.com/runpod-workers/worker-template/actions/workflows/build-test-release.yml)
 
-🚀 | A simple worker that can be used as a starting point to build your own custom RunPod Endpoint API worker.
+🚀 | A simple worker that can be used as a starting point for triton inference. Uses the python backend.
 </div>
 
 ## 📖 | Getting Started
@@ -14,16 +14,11 @@
 1. Clone this repository.
 2. (Optional) Add DockerHub credentials to GitHub Secrets.
 3. Add your code to the `src` directory.
-4. Update the `handler.py` file to load models and process requests.
+4. Update the `handler.py` file to load triton models and process requests, using the tritonserver client library.
 5. Add any dependencies to the `requirements.txt` file.
 6. Add any other build time scripts to the`builder` directory, for example, downloading models.
 7. Update the `Dockerfile` to include any additional dependencies.
 
-### ⚙️ | CI/CD (GitHub Actions)
-
-As a reference this repository provides example CI/CD workflows to help you test your worker and build a docker image. The three main workflows are:
-
-1. `CI-test_handler.yml` - Tests the handler using the input provided by the `--test_input` argument when calling the file containing your handler.
 
 ### Test Handler
 
