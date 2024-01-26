@@ -6,7 +6,8 @@
 # install triton with example
 git clone https://github.com/triton-inference-server/python_backend -b r23.11
 cd python_backend
-mkdir -p models/add_sub/1/
-cp examples/add_sub/model.py models/add_sub/1/model.py
-cp examples/add_sub/config.pbtxt models/add_sub/config.pbtxt
+mkdir -p models/pytorch/1/
+cp examples/pytorch/model.py models/pytorch/1/model.py
+cp examples/pytorch/config.pbtxt models/pytorch/config.pbtxt
+cp examples/pytorch/model.py models/pytorch/1/model.py
 cd /

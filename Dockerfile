@@ -33,11 +33,9 @@ RUN python3 -m pip install --upgrade pip && \
 # NOTE: The base image comes with multiple Python versions pre-installed.
 #       It is reccommended to specify the version of Python when running your code.
 
-
 # Add src files (Worker Template)
 ADD src .
 
-CMD nohup tritonserver --model-repository /python_backend/models &  sleep infinity
+CMD nohup tritonserver --model-repository /python_backend/models --http-port 3000 & python3 -u handler.py
 
-#\
-#    python3 -u /handler.py 
+CMD ["python3",  "-u", "handler.py"]
