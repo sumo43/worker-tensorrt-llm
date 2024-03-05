@@ -15,11 +15,6 @@ WORKDIR /
 # Please refer to the base image's Dockerfile for more information before adding additional dependencies.
 # IMPORTANT: The base image overrides the default huggingface cache location.
 
-# --- Optional: System dependencies ---
-COPY builder/setup.sh /setup.sh
-RUN /bin/bash /setup.sh && \
-    rm /setup.sh
-
 # Start Tritonserver
 #COPY builder/run_tritonserver.sh /run_tritonserver.sh
 #RUN /bin/bash /run_tritonserver.sh 
@@ -35,11 +30,7 @@ RUN python3 -m pip install --upgrade pip && \
 
 # Add src files (Worker Template)
 ADD src .
+ADD triton_model_repo /triton_model_repo
 
-
-
-#wait forever for now
-CMD exec /bin/sh -c "trap : TERM INT; sleep 9999999999d & wait"
-
-#CMD nohup tritonserver --model-repository /python_backend/models --http-port 3000 & python3 -u handler.py
+CMD nohup tritonserver --model-repository /triton_model_repo --http-port 3000 --grpc_port 3001 --metrics_port 3002 & python3 -u handler.py
 #CMD ["python3",  "-u", "handler.py"]
