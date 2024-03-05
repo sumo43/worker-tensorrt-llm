@@ -238,6 +238,13 @@ def handler(job):
 
         passed = True
 
+        n_responses = 1
+
+        batch = {
+            "choices": [{"tokens": []} for _ in range(n_responses)],
+        }
+
+
         for beam in range(1):
             seq_len = sequence_lengths[0][beam] if (
                 not streaming and len(sequence_lengths) > 0) else len(

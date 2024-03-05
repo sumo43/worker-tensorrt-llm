@@ -92,7 +92,7 @@ output [
 parameters {
   key: "tokenizer_dir"
   value: {
-    string_value: "bigscience/bloom-560m" #${tokenizer_dir}"
+    string_value: "/volume/tokenizer" 
   }
 }
 
@@ -105,7 +105,7 @@ parameters {
 
 instance_group [
     {
-        count: 1 #${postprocessing_instance_count}
-        kind: KIND_CPU
+        count: 1        
+	kind: KIND_CPU
     }
 ]

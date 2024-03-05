@@ -305,7 +305,7 @@ parameters: {
 parameters: {
   key: "gpt_model_path"
   value: {
-    string_value: "/tensorrtllm_backend/tensorrtllm_backend/triton_model_repo/tensorrt_llm/1"
+    string_value: "/volume/engine"
   }
 }
 parameters: {
