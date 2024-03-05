@@ -1,5 +1,5 @@
 # use nvidia triton server image
-FROM nvcr.io/nvidia/tritonserver:23.08-py3
+FROM nvcr.io/nvidia/tritonserver:24.02-trtllm-python-py3
 
 # Remove any third-party apt sources to avoid issues with expiring keys.
 RUN rm -f /etc/apt/sources.list.d/*.list
@@ -36,5 +36,10 @@ RUN python3 -m pip install --upgrade pip && \
 # Add src files (Worker Template)
 ADD src .
 
-CMD nohup tritonserver --model-repository /python_backend/models --http-port 3000 & python3 -u handler.py
+
+
+#wait forever for now
+CMD exec /bin/sh -c "trap : TERM INT; sleep 9999999999d & wait"
+
+#CMD nohup tritonserver --model-repository /python_backend/models --http-port 3000 & python3 -u handler.py
 #CMD ["python3",  "-u", "handler.py"]
