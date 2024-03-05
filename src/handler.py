@@ -40,47 +40,82 @@ def handler(job):
 
     # run request
     job_input = job['input']
-    first = job_input.get('first', 1)
-    second = job_input.get('second', 2)
 
-    with httpclient.InferenceServerClient("127.0.0.1:3000") as client:
-        input0_data = np.array(first).astype(np.float32).repeat(4)
-        input1_data = np.array(second).astype(np.float32).repeat(4)
-        inputs = [
-            httpclient.InferInput(
-                "INPUT0", input0_data.shape, np_to_triton_dtype(input0_data.dtype)
-            ),
-            httpclient.InferInput(
-                "INPUT1", input1_data.shape, np_to_triton_dtype(input1_data.dtype)
-            ),
-        ]
+    STREAMING=False
 
-        inputs[0].set_data_from_numpy(input0_data)
-        inputs[1].set_data_from_numpy(input1_data)
+    with grpcclient.InferenceServerClient("127.0.0.1:3000") as triton_client:
 
-        outputs = [
-            httpclient.InferRequestedOutput("OUTPUT0"),
-            httpclient.InferRequestedOutput("OUTPUT1"),
-        ]
+        try:
+            infer_future = triton_client.async_infer(
+                'tensorrt_llm',
+                inputs,
+                outputs=outputs,
+                request_id=request_id,
+                callback=partial(callback, user_data),
+                parameters={'Streaming': False}
+            )
 
-        response = client.infer(model_name, inputs, request_id=str(1), outputs=outputs)
+            expected_responses = 1
+            processed_count = 0
 
-        result = response.get_response()
-        output0_data = response.as_numpy("OUTPUT0")
-        output1_data = response.as_numpy("OUTPUT1")
+            while processed_count < expected_responses:
+                try:
+                    result = user_data._completed_requests.get()
+                    print("Got completed request", flush=True)
+                except Exception:
+                    break
 
-        if not np.allclose(input0_data + input1_data, output0_data):
-            print("pytorch example error: incorrect sum")
-            sys.exit(1)
+                if type(result) == InferenceServerException:
+                    if result.status() == "StatusCode.CANCELLED":
+                        print("Request is cancelled")
+                    else:
+                        print("Received an error from server:")
+                        print(result)
+                        raise result
+                else:
+                    #check_output_names(FLAGS.requested_outputs, result)
+                    output_ids = result.as_numpy('output_ids')
+                    sequence_lengths = result.as_numpy('sequence_length')
+                    if FLAGS.return_log_probs:
+                        cum_log_probs = result.as_numpy('cum_log_probs')
+                        output_log_probs = result.as_numpy(
+                            'output_log_probs')
+                    if FLAGS.return_context_logits:
+                        context_logits = result.as_numpy('context_logits')
+                    if FLAGS.return_generation_logits:
+                        generation_logits = result.as_numpy(
+                            'generation_logits')
+                    if output_ids is not None:
+                        for beam_output_ids in output_ids[0]:
+                            tokens = list(beam_output_ids)
+                            actual_output_ids.append(tokens)
+                    else:
+                        print("Got cancellation response from server")
 
-        if not np.allclose(input0_data - input1_data, output1_data):
-            print("pytorch example error: incorrect difference")
-            sys.exit(1)
+                processed_count = processed_count + 1
 
-        print("PASS: pytorch")
 
-        return "INPUT0 ({}) + INPUT1 ({}) = OUTPUT0 ({})".format(
-                input0_data, input1_data, output0_data)
 
+
+
+        except Exception as e:
+            err = "Encountered error: " + str(e)
+            print(err)
+            sys.exit(err)
+
+        passed = True
+
+        for beam in range(FLAGS.beam_width):
+            seq_len = sequence_lengths[0][beam] if (
+                not FLAGS.streaming and len(sequence_lengths) > 0) else len(
+                    actual_output_ids[beam])
+            # These should be equal when input IDs are excluded from output
+            output_ids_w_prompt = actual_output_ids[beam][:seq_len]
+            output_ids_wo_prompt = (
+                output_ids_w_prompt if FLAGS.exclude_input_in_output else
+                output_ids_w_prompt[input_ids_data.shape[1]:])
+            if tokenizer != None:
+                output_text = tokenizer.decode(output_ids_wo_prompt)
+                return {"response": output_text}
 
 runpod.serverless.start({"handler": handler})
