@@ -1,6 +1,8 @@
 import os
 import logging
 import json
+import traceback
+
 
 from dotenv import load_dotenv
 from torch.cuda import device_count
@@ -20,6 +22,7 @@ from generator import handle
 
 class OpenAITRTEngine:
     def __init__(self):
+        pass
         #self.served_model_name = os.getenv("OPENAI_SERVED_MODEL_NAME_OVERRIDE") or self.config["model"]
         #self.response_role = os.getenv("OPENAI_RESPONSE_ROLE") or "assistant"
         #self.tokenizer = vllm_engine.tokenizer
@@ -29,9 +32,14 @@ class OpenAITRTEngine:
         #self.raw_openai_output = bool(int(os.getenv("RAW_OPENAI_OUTPUT", 1)))
 
     async def generate(self, openai_request: JobInput):
-        if openai_request.openai_route == "/v1/models":
+    
+        req = JobInput(openai_request["input"])
+        print("request input")
+        print(req)
+
+        if req.openai_route == "/v1/models":
             yield await self._handle_model_request()
-        elif openai_request.openai_route in ["/v1/chat/completions", "/v1/completions"]:
+        elif req.openai_route in ["/v1/chat/completions", "/v1/completions"]:
             async for response in self._handle_chat_or_completion_request(openai_request):
                 yield response
         else:
@@ -42,25 +50,28 @@ class OpenAITRTEngine:
         return models.model_dump()
 
     async def _handle_chat_or_completion_request(self, openai_request: JobInput):
-        if openai_request.openai_route == "/v1/chat/completions":
-            request_class = ChatCompletionRequest
-            generator_function = self.chat_engine.create_chat_completion
-        elif openai_request.openai_route == "/v1/completions":
-            request_class = CompletionRequest
-            generator_function = self.completion_engine.create_completion
+        req = JobInput(openai_request["input"])
+
+        #if req.openai_route == "/v1/chat/completions":
+        #    request_class = ChatCompletionRequest
+        #    generator_function = self.chat_engine.create_chat_completion
+        #elif req.openai_route == "/v1/completions":
+        #    request_class = CompletionRequest
+        #    generator_function = self.completion_engine.create_completion
 
         generator_function = handle
-
         response_generator = await handle(openai_request)
 
-        if not openai_request.openai_input.get("stream") or isinstance(response_generator, ErrorResponse):
-            yield response_generator.model_dump()
-        else:
-            batch = []
-            batch_token_counter = 0
-            batch_size = BatchSize(self.default_batch_size, self.min_batch_size, self.batch_size_growth_factor)
+        batch = []
+        batch_token_counter = 0
+        #batch_size = BatchSize(1, 1, 2) #self.default_batch_size, self.min_batch_size, self.batch_size_growth_factor)
 
+        print("finish handle")
+        print(response_generator)
+
+        try:
             async for chunk_str in response_generator:
+                print("for 1")
                 if "data" in chunk_str:
                     if self.raw_openai_output:
                         data = chunk_str
@@ -70,14 +81,22 @@ class OpenAITRTEngine:
                         data = json.loads(chunk_str.removeprefix("data: ").rstrip("\n\n")) if not self.raw_openai_output else chunk_str
                     batch.append(data)
                     batch_token_counter += 1
-                    if batch_token_counter >= batch_size.current_batch_size:
-                        if self.raw_openai_output:
-                            batch = "".join(batch)
-                        yield batch
-                        batch = []
-                        batch_token_counter = 0
-                        batch_size.update()
+
+                    yield [data]
+
+                    # dont do the batch stuff for now
+                    #if batch_token_counter >= batch_size.current_batch_size:
+                    #    if self.raw_openai_output:
+                    #        batch = "".join(batch)
+                    #    yield batch
+                    #    batch = []
+                    #    batch_token_counter = 0
+                    #    batch_size.update()
             if batch:
                 if self.raw_openai_output:
                     batch = "".join(batch)
                 yield batch
+        except Exception as e:
+            print(e)
+
+            raise e

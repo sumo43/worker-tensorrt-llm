@@ -121,7 +121,7 @@ async def async_stream_yield(model_name, inputs, outputs, request_id):
     }
 
 
-def chat_completion_stream_generator(model_name, inputs, outputs, request_id):
+async def chat_completion_stream_generator(model_name, inputs, outputs, request_id):
     response_role = "user"
     model_name = "bloom/bloom-540M"
     created_time = int(time.monotonic())
@@ -130,8 +130,8 @@ def chat_completion_stream_generator(model_name, inputs, outputs, request_id):
 
     # Send response for each token for each request.n (index)
     previous_texts = [""] *  1# request.n
-    previous_num_tokens = [0] 1 #* request.n
-    finish_reason_sent = [False] 1 #* request.n
+    previous_num_tokens = [0] * 1 #* request.n
+    finish_reason_sent = [False] * 1 #* request.n
     
     with grpcclient.InferenceServerClient("127.0.0.1:3001") as triton_client:
 
@@ -242,7 +242,7 @@ def chat_completion_stream_generator(model_name, inputs, outputs, request_id):
     yield "data: [DONE]\n\n"
 
 
-def handle(job_input):
+async def handle(job):
     """ Handler function that will be used to process jobs. """
 
     # wait until triton server returns ready
@@ -312,6 +312,9 @@ def handle(job_input):
         return_log_probs_data, top_k_data, top_p_data, draft_ids_data,
         return_context_logits_data, return_generation_logits_data)
 
+    outputs = None
+    request_id = ''
+
 
     return chat_completion_stream_generator("tensorrt_llm_bls", inputs, outputs, request_id)
 
@@ -333,34 +336,34 @@ async def _handle_chat_or_completion_request(job):
             yield create_error_response(str(e)).model_dump()
             return
         
+        print("start gen")
         response_generator = await generator_function(request, DummyRequest())
 
-        if not openai_request.openai_input.get("stream") or isinstance(response_generator, ErrorResponse):
-            yield response_generator.model_dump()
-        else:
-            batch = []
-            batch_token_counter = 0
-            batch_size = BatchSize(self.default_batch_size, self.min_batch_size, self.batch_size_growth_factor)
-        
-            async for chunk_str in response_generator:
-                if "data" in chunk_str:
-                    if self.raw_openai_output:
-                        data = chunk_str
-                    elif "[DONE]" in chunk_str:
-                        continue
-                    else:
-                        data = json.loads(chunk_str.removeprefix("data: ").rstrip("\n\n")) if not self.raw_openai_output else chunk_str
-                    batch.append(data)
-                    batch_token_counter += 1
-                    if batch_token_counter >= batch_size.current_batch_size:
-                        if self.raw_openai_output:
-                            batch = "".join(batch)
-                        yield batch
-                        batch = []
-                        batch_token_counter = 0
-                        batch_size.update()
-            if batch:
+        print("end gen")
+
+        batch = []
+        batch_token_counter = 0
+        batch_size = BatchSize(self.default_batch_size, self.min_batch_size, self.batch_size_growth_factor)
+    
+        async for chunk_str in response_generator:
+            if "data" in chunk_str:
                 if self.raw_openai_output:
-                    batch = "".join(batch)
-                yield batch
-            
+                    data = chunk_str
+                elif "[DONE]" in chunk_str:
+                    continue
+                else:
+                    data = json.loads(chunk_str.removeprefix("data: ").rstrip("\n\n")) if not self.raw_openai_output else chunk_str
+                batch.append(data)
+                batch_token_counter += 1
+                if batch_token_counter >= batch_size.current_batch_size:
+                    if self.raw_openai_output:
+                        batch = "".join(batch)
+                    yield batch
+                    batch = []
+                    batch_token_counter = 0
+                    batch_size.update()
+        if batch:
+            if self.raw_openai_output:
+                batch = "".join(batch)
+            yield batch
+        

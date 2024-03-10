@@ -6,7 +6,7 @@ import time
 
 app = FastAPI()
 
-RUNPOD_URL = "http://localhost:8000"
+RUNPOD_URL = "http://localhost:3030"
 
 async def stream_generator(headers, check_url):
     async with aiohttp.ClientSession() as session:
@@ -29,6 +29,9 @@ async def fetch_response( request_data, headers, route, stream=False):
     # url = f'https://api.runpod.ai/v2/{endpoint_id}'
     url = RUNPOD_URL
     post_url = f'{url}/run'
+    
+    print("POST_URL")
+    print(post_url)
     async with aiohttp.ClientSession() as session:
         async with session.post(post_url, headers=headers, json=convert_input(request_data, route)) as post_response:
             if post_response.status != 200:
@@ -139,4 +142,4 @@ async def get_model(request: Request):
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("middleware:app", host="0.0.0.0", port=8000)
+    uvicorn.run("middleware:app", host="0.0.0.0", port=8887)
