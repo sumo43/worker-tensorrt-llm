@@ -18,7 +18,7 @@ import numpy as np
 import tritonclient.grpc.aio as grpcclient
 from transformers import AutoTokenizer
 from tritonclient.utils import InferenceServerException, np_to_triton_dtype
-from constants import ChatCompletionResponseStreamChoice, ChatCompletionStreamResponse, DeltaMessage
+from constants import ChatCompletionResponseStreamChoice, ChatCompletionStreamResponse, DeltaMessage, UsageInfo
 
 model_name = "pytorch"
 shape = [1]
@@ -51,7 +51,7 @@ def prepare_tensor(name, input):
     t.set_data_from_numpy(input)
     return t
 
-def prepare_inputs(input_ids_data, input_lengths_data, request_output_len_data,
+def prepare_inputs(input_ids_data, request_output_len_data,
                    beam_width_data, temperature_data, repetition_penalty_data,
                    presence_penalty_data, frequency_penalty_data,
                    streaming_data, end_id, pad_id, prompt_embedding_table_data,
@@ -60,17 +60,16 @@ def prepare_inputs(input_ids_data, input_lengths_data, request_output_len_data,
                    draft_ids_data, return_context_logits_data,
                    return_generation_logits_data):
     inputs = [
-        prepare_tensor("input_ids", input_ids_data),
-        prepare_tensor("input_lengths", input_lengths_data),
-        prepare_tensor("request_output_len", request_output_len_data),
+        prepare_tensor("text_input", input_ids_data),
+        prepare_tensor("max_tokens", request_output_len_data),
         prepare_tensor("beam_width", beam_width_data),
         prepare_tensor("temperature", temperature_data),
-        prepare_tensor("streaming", streaming_data),
+        prepare_tensor("stream", streaming_data),
         prepare_tensor("end_id", end_id),
         prepare_tensor("pad_id", pad_id),
         prepare_tensor("return_log_probs", return_log_probs_data),
-        prepare_tensor("runtime_top_k", top_k_data),
-        prepare_tensor("runtime_top_p", top_p_data),
+        prepare_tensor("top_k", top_k_data),
+        prepare_tensor("top_p", top_p_data),
     ]
     if prompt_embedding_table_data is not None:
         inputs += [
@@ -123,7 +122,6 @@ async def async_stream_yield(model_name, inputs, outputs, request_id):
 
 async def chat_completion_stream_generator(model_name, inputs, outputs, request_id):
     response_role = "user"
-    model_name = "bloom/bloom-540M"
     created_time = int(time.monotonic())
     chunk_object_type = "chat.completion.chunk"
     first_iteration = True
@@ -133,15 +131,22 @@ async def chat_completion_stream_generator(model_name, inputs, outputs, request_
     previous_num_tokens = [0] * 1 #* request.n
     finish_reason_sent = [False] * 1 #* request.n
     
-    with grpcclient.InferenceServerClient("127.0.0.1:3001") as triton_client:
+    async with grpcclient.InferenceServerClient("127.0.0.1:3001") as triton_client:
 
         response_iterator = triton_client.stream_infer(
-            inputs_iterator=async_request_iterator(model_name, inputs, outputs, request_id)
+            inputs_iterator=async_stream_yield(model_name, inputs, outputs, request_id)
         )
+
+        # for now its always 0 since we dont support batching yet
+        i = 0
 
         first_iteration = True
 
-        async for response in response_iterator: 
+        async for result, err in response_iterator: 
+
+            if err:
+                print(err)
+
             if first_iteration:
                 role = "assistant" #self.get_chat_request_role(request)
 
@@ -169,47 +174,20 @@ async def chat_completion_stream_generator(model_name, inputs, outputs, request_
                 delta_text = output[0].decode("utf8")
                 logprobs = None
 
-                if output.finish_reason is None:
-                    # Send token-by-token response for each request.n
-                    choice_data = ChatCompletionResponseStreamChoice(
-                        index=i,
-                        delta=DeltaMessage(content=delta_text),
-                        logprobs=logprobs,
-                        finish_reason=None)
-                    chunk = ChatCompletionStreamResponse(
-                        id=request_id,
-                        object=chunk_object_type,
-                        created=created_time,
-                        choices=[choice_data],
-                        model=model_name)
-                    data = chunk.model_dump_json(exclude_unset=True)
-                    yield f"data: {data}\n\n"
-                else:
-                    # Send the finish response for each request.n only once
-                    prompt_tokens = len(res.prompt_token_ids)
-                    final_usage = UsageInfo(
-                        prompt_tokens=prompt_tokens,
-                        completion_tokens=previous_num_tokens[i],
-                        total_tokens=prompt_tokens +
-                        previous_num_tokens[i],
-                    )
-                    choice_data = ChatCompletionResponseStreamChoice(
-                        index=i,
-                        delta=DeltaMessage(content=delta_text),
-                        logprobs=logprobs,
-                        finish_reason=output.finish_reason)
-                    chunk = ChatCompletionStreamResponse(
-                        id=request_id,
-                        object=chunk_object_type,
-                        created=created_time,
-                        choices=[choice_data],
-                        model=model_name)
-                    if final_usage is not None:
-                        chunk.usage = final_usage
-                    data = chunk.model_dump_json(exclude_unset=True,
-                                                 exclude_none=True)
-                    yield f"data: {data}\n\n"
-                    finish_reason_sent[i] = True
+                # Send token-by-token response for each request.n
+                choice_data = ChatCompletionResponseStreamChoice(
+                    index=i,
+                    delta=DeltaMessage(content=delta_text),
+                    logprobs=logprobs,
+                    finish_reason=None)
+                chunk = ChatCompletionStreamResponse(
+                    id=request_id,
+                    object=chunk_object_type,
+                    created=created_time,
+                    choices=[choice_data],
+                    model=model_name)
+                data = chunk.model_dump_json(exclude_unset=True)
+                yield f"data: {data}\n\n"
 
     # Send the finish response for each request.n only once
     # prompt_tokens = len(res.prompt_token_ids)
@@ -275,7 +253,13 @@ async def handle(job):
 
     input_ids = [tokenizer.encode(text)]
 
-    input_ids_data = np.array(input_ids, dtype=np.int32)
+    #input_ids_data = #np.array(input_ids, dtype=np.int32)
+    #input_ids_data = np.array_str(text)
+
+    input_ids_data = [["Hello"]]
+    input_ids_data = np.array(input_ids_data).astype(object)
+
+    print("1")
     input_lengths = [[len(ii)] for ii in input_ids]
     input_lengths_data = np.array(input_lengths, dtype=np.int32)
     request_output_len = [[500]]
@@ -295,7 +279,7 @@ async def handle(job):
     repetition_penalty_data = None
     presence_penalty_data = None
     frequency_penalty_data = None
-    streaming = [[False]]
+    streaming = [[True]]
     streaming_data = np.array(streaming, dtype=bool)
 
     draft_ids_data = None
@@ -304,7 +288,7 @@ async def handle(job):
 
 
     inputs = prepare_inputs(
-        input_ids_data, input_lengths_data, request_output_len_data,
+        input_ids_data, request_output_len_data,
         beam_width_data, temperature_data, repetition_penalty_data,
         presence_penalty_data, frequency_penalty_data, streaming_data,
         end_id_data, pad_id_data, prompt_embedding_table_data,

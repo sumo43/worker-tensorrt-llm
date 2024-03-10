@@ -73,14 +73,15 @@ class OpenAITRTEngine:
             async for chunk_str in response_generator:
                 print("for 1")
                 if "data" in chunk_str:
-                    if self.raw_openai_output:
-                        data = chunk_str
-                    elif "[DONE]" in chunk_str:
-                        continue
-                    else:
-                        data = json.loads(chunk_str.removeprefix("data: ").rstrip("\n\n")) if not self.raw_openai_output else chunk_str
-                    batch.append(data)
-                    batch_token_counter += 1
+                    #if self.raw_openai_output:
+                    data = chunk_str
+                    #elif "[DONE]" in chunk_str:
+                    #    continue
+                    #else:
+                    #    data = chunk_str
+                    #    #data = json.loads(chunk_str.removeprefix("data: ").rstrip("\n\n")) if not self.raw_openai_output else chunk_str
+                    #batch.append(data)
+                    #batch_token_counter += 1
 
                     yield [data]
 
@@ -93,8 +94,8 @@ class OpenAITRTEngine:
                     #    batch_token_counter = 0
                     #    batch_size.update()
             if batch:
-                if self.raw_openai_output:
-                    batch = "".join(batch)
+                #if self.raw_openai_output:
+                batch = "".join(batch)
                 yield batch
         except Exception as e:
             print(e)
