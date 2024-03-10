@@ -1,17 +1,15 @@
 import os
 import runpod
 from utils import JobInput
-from engine import vLLMEngine, OpenAIvLLMEngine
+from engine import vLLMEngine, OpenAITRTEngine
 
-vllm_engine = vLLMEngine()
-OpenAIvLLMEngine = OpenAIvLLMEngine(vllm_engine)
 
+engine = OpenAITRTEngine
 async def handler(job):
 
-    results_generator = 
-    job_input = JobInput(job["input"])
-    engine = OpenAIvLLMEngine if job_input.openai_route else vllm_engine
-    results_generator = engine.generate(job_input)
+    #job_input = JobInput(job["input"])
+    #engine = OpenAIvLLMEngine if job_input.openai_route else vllm_engine
+    results_generator = engine.generate(job)
     async for batch in results_generator:
         yield batch
 

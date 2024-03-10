@@ -16,6 +16,8 @@ from constants import DEFAULT_MAX_CONCURRENCY, DEFAULT_BATCH_SIZE, DEFAULT_BATCH
 from tokenizer import TokenizerWrapper
 from config import EngineConfig
 
+from generator import handle
+
 class OpenAITRTEngine:
     def __init__(self):
         #self.served_model_name = os.getenv("OPENAI_SERVED_MODEL_NAME_OVERRIDE") or self.config["model"]
@@ -47,15 +49,9 @@ class OpenAITRTEngine:
             request_class = CompletionRequest
             generator_function = self.completion_engine.create_completion
 
-        try:
-            request = request_class(
-                **openai_request.openai_input
-            )
-        except Exception as e:
-            yield create_error_response(str(e)).model_dump()
-            return
+        generator_function = handle
 
-        response_generator = await generator_function(request, DummyRequest())
+        response_generator = await handle(openai_request)
 
         if not openai_request.openai_input.get("stream") or isinstance(response_generator, ErrorResponse):
             yield response_generator.model_dump()
