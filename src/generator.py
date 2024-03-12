@@ -1,6 +1,7 @@
 """ Example handler file with Triton. """
 
 import runpod
+from uuid import uuid4
 import sys
 import requests
 import time
@@ -13,12 +14,19 @@ import sys
 import time
 from functools import partial
 
+from vllm.entrypoints.openai.protocol import ChatCompletionRequest, CompletionRequest
+
 import numpy as np
 #import tritonclient.grpc as grpcclient
 import tritonclient.grpc.aio as grpcclient
 from transformers import AutoTokenizer
 from tritonclient.utils import InferenceServerException, np_to_triton_dtype
 from constants import ChatCompletionResponseStreamChoice, ChatCompletionStreamResponse, DeltaMessage, UsageInfo
+from utils import JobInput
+
+from transformers import AutoTokenizer
+
+tokenizer = AutoTokenizer.from_pretrained("bigscience/bloom-560m")
 
 model_name = "pytorch"
 shape = [1]
@@ -223,6 +231,7 @@ async def chat_completion_stream_generator(model_name, inputs, outputs, request_
 async def handle(job):
     """ Handler function that will be used to process jobs. """
 
+    global tokenizer
     # wait until triton server returns ready
     url = "http://127.0.0.1:3000/v2/health/ready"  # Replace with your actual URL
     wait_for_ready(url)
@@ -230,13 +239,28 @@ async def handle(job):
     # run request
     job_input = job['input']
 
+    ji = JobInput(job_input)
+
+    request = ChatCompletionRequest(**ji.openai_input)
+
+    prompt = tokenizer.apply_chat_template(
+                conversation=request.messages,
+                tokenize=False,
+                add_generation_prompt=request.add_generation_prompt)
+
+    print("\n\n\n\n\n\n\n\n\n\n\n\n\n\n")
+
+    print(request)
+
+    print("\n\n\n\n\n\n")
+
     STREAMING=False
 
     tokenizer = AutoTokenizer.from_pretrained("bigscience/bloom-560m",
                                                   legacy=False,
                                                   padding_side='left',
                                                   trust_remote_code=True)
-    text = "hello"
+    text = prompt
     tokenizer.pad_token = tokenizer.eos_token
     pad_id = tokenizer.encode(tokenizer.pad_token,
                               add_special_tokens=False)[0]
@@ -251,26 +275,24 @@ async def handle(job):
     lora_weights_data = None
     lora_config_data = None
 
-    input_ids = [tokenizer.encode(text)]
-
+    #input_ids = [tokenizer.encode(text)]
     #input_ids_data = #np.array(input_ids, dtype=np.int32)
     #input_ids_data = np.array_str(text)
 
-    input_ids_data = [["Hello"]]
+    input_ids_data = [[prompt]]
     input_ids_data = np.array(input_ids_data).astype(object)
 
-    print("1")
-    input_lengths = [[len(ii)] for ii in input_ids]
-    input_lengths_data = np.array(input_lengths, dtype=np.int32)
-    request_output_len = [[500]]
+    #input_lengths = [[len(ii)] for ii in input_ids]
+    #input_lengths_data = np.array(input_lengths, dtype=np.int32)
+    request_output_len = [[request.max_tokens if request.max_tokens is not None else 0]] # actually max len
     request_output_len_data = np.array(request_output_len, dtype=np.int32)
     beam_width = [[1]]
     beam_width_data = np.array(beam_width, dtype=np.int32)
-    top_k = [[1]]
+    top_k = [[request.top_k]]
     top_k_data = np.array(top_k, dtype=np.int32)
-    top_p = [[1.]]
+    top_p = [[request.top_p]]
     top_p_data = np.array(top_p, dtype=np.float32)
-    temperature = [[0.7]]
+    temperature = [[request.temperature]]
     temperature_data = np.array(temperature, dtype=np.float32)
     return_log_probs = [[False]]
 
@@ -297,8 +319,7 @@ async def handle(job):
         return_context_logits_data, return_generation_logits_data)
 
     outputs = None
-    request_id = ''
-
+    request_id = str(uuid4())
 
     return chat_completion_stream_generator("tensorrt_llm_bls", inputs, outputs, request_id)
 

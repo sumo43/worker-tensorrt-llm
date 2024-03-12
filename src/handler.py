@@ -10,12 +10,13 @@ async def handler(job):
     #engine = OpenAIvLLMEngine if job_input.openai_route else vllm_engine
     results_generator = engine.generate(job)
     async for batch in results_generator:
+        print(f"BATCH: {batch}")
         yield batch
 
 runpod.serverless.start(
     {
         "handler": handler,
-        "concurrency_modifier": lambda x: 32,
-        "return_aggregate_stream": True,
+        #"concurrency_modifier": lambda x: 32,
+        "return_aggregate_stream": False,
     }
 )

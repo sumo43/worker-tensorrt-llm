@@ -59,7 +59,23 @@ class OpenAITRTEngine:
         #    request_class = CompletionRequest
         #    generator_function = self.completion_engine.create_completion
 
-        generator_function = handle
+
+        if req.openai_route == "/v1/chat/completions":
+            request_class = ChatCompletionRequest
+        elif req.openai_route == "/v1/completions":
+            request_class = CompletionRequest
+
+        #generator_function = handle
+
+        request = request_class(
+                **req.openai_input
+            )
+
+        #request = request_class()
+
+        print(request)
+
+
         response_generator = await handle(openai_request)
 
         batch = []
@@ -71,8 +87,9 @@ class OpenAITRTEngine:
 
         try:
             async for chunk_str in response_generator:
-                print("for 1")
+                print("inner loop")
                 if "data" in chunk_str:
+                    print("stuff")
                     #if self.raw_openai_output:
                     data = chunk_str
                     #elif "[DONE]" in chunk_str:
@@ -83,7 +100,7 @@ class OpenAITRTEngine:
                     #batch.append(data)
                     #batch_token_counter += 1
 
-                    yield [data]
+                    yield data
 
                     # dont do the batch stuff for now
                     #if batch_token_counter >= batch_size.current_batch_size:
