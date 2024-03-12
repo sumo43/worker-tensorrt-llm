@@ -14,6 +14,7 @@ async def stream_generator(headers, check_url):
             async with session.post(check_url, headers=headers) as response:
                 result = await response.json()
                 for chunk in result.get('stream', []):
+                    #print(f"CHUNK: {chunk}")
                     yield chunk["output"].encode()
                 if result.get('status') == 'COMPLETED':
                     break

@@ -1,15 +1,8 @@
-import requests
-import json
+import openai
 
-# Set up the API endpoint and your API key
-api_endpoint = "http://localhost:8887/v1/chat/completions"
-api_key = "YOUR_API_KEY"
-
-# Set up the request headers
-headers = {
-    "Content-Type": "application/json",
-    "Authorization": f"Bearer {api_key}"
-}
+# Set up your API key and base URL
+openai.api_key = "YOUR_API_KEY"
+openai.api_base = "http://localhost:8887/v1"
 
 # Set up the request data
 data = {
@@ -19,17 +12,13 @@ data = {
 }
 
 # Send the request to the API endpoint
-response = requests.post(api_endpoint, headers=headers, data=json.dumps(data), stream=True)
+response = openai.ChatCompletion.create(**data)
 
 # Process the streaming response
-for line in response.iter_lines():
-    if line:
-        decoded_line = line.decode("utf-8")
-        if "data: " in decoded_line:
-            message = decoded_line[6:]
-            if message != "[DONE]":
-                chat_message = json.loads(message)
-                content = chat_message["choices"][0]["delta"].get("content", "")
-                print(content, end="", flush=True)
+for chunk in response:
+    chunk_message = chunk['choices'][0]['delta']
+    if 'content' in chunk_message:
+        content = chunk_message['content']
+        print(content, end='', flush=True)
 
 print("\nStreaming completed.")
