@@ -1,8 +1,8 @@
 import openai
 
 # Set up your API key and base URL
-openai.api_key = "YOUR_API_KEY"
-openai.api_base = "http://localhost:8887/v1"
+openai.api_key = "A6R1HFGHGNJV6QILAAE5J1NG6BFEQGGZOHNICO8U"
+openai.api_base = "http://api.runpod.ai/v2/jbct1w1f9nbtnr/v1"
 
 # Set up the request data
 data = {

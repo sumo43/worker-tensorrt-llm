@@ -139,7 +139,7 @@ async def chat_completion_stream_generator(model_name, inputs, outputs, request_
     previous_num_tokens = [0] * 1 #* request.n
     finish_reason_sent = [False] * 1 #* request.n
     
-    async with grpcclient.InferenceServerClient("127.0.0.1:3001") as triton_client:
+    async with grpcclient.InferenceServerClient("127.0.0.1:8001") as triton_client:
 
         response_iterator = triton_client.stream_infer(
             inputs_iterator=async_stream_yield(model_name, inputs, outputs, request_id)

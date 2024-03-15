@@ -67,6 +67,13 @@ class OpenAITRTEngine:
 
         #generator_function = handle
 
+        print("########")
+        print(req)
+        print("############# INPUT ############")
+        print(req.openai_input)
+        print(req.__dict__)
+        print(req.openai_input.__dict__)
+
         request = request_class(
                 **req.openai_input
             )
