@@ -288,7 +288,7 @@ async def handle(job):
     request_output_len_data = np.array(request_output_len, dtype=np.int32)
     beam_width = [[1]]
     beam_width_data = np.array(beam_width, dtype=np.int32)
-    top_k = [[request.top_k]]
+    top_k = [[1]]
     top_k_data = np.array(top_k, dtype=np.int32)
     top_p = [[request.top_p]]
     top_p_data = np.array(top_p, dtype=np.float32)
