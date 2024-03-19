@@ -233,7 +233,7 @@ async def handle(job):
 
     global tokenizer
     # wait until triton server returns ready
-    url = "http://127.0.0.1:3000/v2/health/ready"  # Replace with your actual URL
+    url = "http://127.0.0.1:8000/v2/health/ready"  # Replace with your actual URL
     wait_for_ready(url)
 
     # run request

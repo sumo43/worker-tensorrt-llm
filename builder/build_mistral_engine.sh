@@ -22,24 +22,24 @@ pip3 uninstall --yes mpmath && pip3 install mpmath==1.3.0
 mkdir -p $OUTPUT_DIR
 mkdir -p $ENGINE_DIR
 
-
 echo "cloning model repo"
 apt-get install git-lfs
 
 git lfs install
 
-#git clone https://huggingface.co/mistralai/Mistral-7B-v0.1 /volume/tokenizer
+mkdir -p /volume/tokenizer && git clone https://huggingface.co/mistralai/Mistral-7B-v0.1 /volume/tokenizer
 
 #alias python=python3
-
-mkdir -p /volume/tokenizer && git clone https://huggingface.co/bigscience/bloom-560m /volume/tokenizer
+#mkdir -p /volume/tokenizer && git clone https://huggingface.co/bigscience/bloom-560m /volume/tokenizer
 
 # Convert the checkpoint
-python3 $TENSORRT_LLM_DIR/examples/bloom/convert_checkpoint.py --model_dir "/volume/tokenizer" \
+python3 $TENSORRT_LLM_DIR/examples/llama/convert_checkpoint.py --model_dir "/volume/tokenizer" \
                                                               --output_dir $OUTPUT_DIR \
                                                               --dtype float16
 
 # Build the TensorRT engine
 trtllm-build --checkpoint_dir $OUTPUT_DIR \
-             --output_dir $ENGINE_DIR 
+             --output_dir $ENGINE_DIR \
+             --gemm_plugin float16 \
+             --max_input_len 32256
 

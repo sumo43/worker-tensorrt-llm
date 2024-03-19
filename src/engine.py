@@ -32,10 +32,7 @@ class OpenAITRTEngine:
         #self.raw_openai_output = bool(int(os.getenv("RAW_OPENAI_OUTPUT", 1)))
 
     async def generate(self, openai_request: JobInput):
-    
         req = JobInput(openai_request["input"])
-        print("request input")
-        print(req)
 
         if req.openai_route == "/v1/models":
             yield await self._handle_model_request()
@@ -66,22 +63,23 @@ class OpenAITRTEngine:
             request_class = CompletionRequest
 
         #generator_function = handle
-
+        """
+        print("OPENAI REQUEST")
+        print(openai_request)
         print("########")
         print(req)
         print("############# INPUT ############")
         print(req.openai_input)
         print(req.__dict__)
         print(req.openai_input.__dict__)
+        """
 
         request = request_class(
                 **req.openai_input
             )
 
         #request = request_class()
-
-        print(request)
-
+        #print(request)
 
         response_generator = await handle(openai_request)
 
@@ -89,14 +87,14 @@ class OpenAITRTEngine:
         batch_token_counter = 0
         #batch_size = BatchSize(1, 1, 2) #self.default_batch_size, self.min_batch_size, self.batch_size_growth_factor)
 
-        print("finish handle")
-        print(response_generator)
+        #print("finish handle")
+        #print(response_generator)
 
         try:
             async for chunk_str in response_generator:
-                print("inner loop")
+                #print("inner loop")
                 if "data" in chunk_str:
-                    print("stuff")
+                    #print("stuff")
                     #if self.raw_openai_output:
                     data = chunk_str
                     #elif "[DONE]" in chunk_str:

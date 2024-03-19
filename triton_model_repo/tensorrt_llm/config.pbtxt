@@ -29,7 +29,7 @@ backend: "tensorrtllm"
 max_batch_size: 8 #${triton_max_batch_size}
 
 model_transaction_policy {
-  decoupled: false #${decoupled_mode}
+  decoupled: true #${decoupled_mode}
 }
 
 dynamic_batching {
