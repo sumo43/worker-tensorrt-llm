@@ -1,4 +1,3 @@
-#!/bin/bash
 
 
 # Set the paths to the Mistral model, TensorRT-LLM repo, and output directories
@@ -27,19 +26,22 @@ apt-get install git-lfs
 
 git lfs install
 
+huggingface-cli download princeton-nlp/Sheared-LLaMA-1.3B --local-dir /volume/tokenizer --local-dir-use-symlinks False  
+
+#RUN mkdir -p /volume/tokenizer && git clone https://huggingface.co/NousResearch/Nous-Hermes-llama-2-7b /volume/tokenizer
 #huggingface-cli download mistralai/mistral-7b-v0.1 --local-dir /volume/tokenizer --local-dir-use-symlinks False
 #huggingface-cli download bigscience/bloom-560m --local-dir /volume/tokenizer --local-dir-use-symlinks False
 
-
+#
 #alias python=python3
-mkdir -p /volume/tokenizer && git clone https://huggingface.co/bigscience/bloom-560m /volume/tokenizer
+#mkdir -p /volume/tokenizer && git clone https://huggingface.co/bigscience/bloom-560m /volume/tokenizer
+
 
 # Convert the checkpoint
-python3 $TENSORRT_LLM_DIR/examples/bloom/convert_checkpoint.py --model_dir "/volume/tokenizer" \
+python3 $TENSORRT_LLM_DIR/examples/llama/convert_checkpoint.py --model_dir "/volume/tokenizer" \
                                                               --output_dir $OUTPUT_DIR \
-                                                              --dtype float16
+
 
 # Build the TensorRT engine
 trtllm-build --checkpoint_dir $OUTPUT_DIR \
              --output_dir $ENGINE_DIR 
-

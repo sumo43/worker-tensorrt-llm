@@ -275,15 +275,9 @@ async def handle(job):
     lora_weights_data = None
     lora_config_data = None
 
-    #input_ids = [tokenizer.encode(text)]
-    #input_ids_data = #np.array(input_ids, dtype=np.int32)
-    #input_ids_data = np.array_str(text)
-
     input_ids_data = [[prompt]]
     input_ids_data = np.array(input_ids_data).astype(object)
 
-    #input_lengths = [[len(ii)] for ii in input_ids]
-    #input_lengths_data = np.array(input_lengths, dtype=np.int32)
     request_output_len = [[request.max_tokens if request.max_tokens is not None else 0]] # actually max len
     request_output_len_data = np.array(request_output_len, dtype=np.int32)
     beam_width = [[1]]

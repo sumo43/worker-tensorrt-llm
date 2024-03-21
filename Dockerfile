@@ -21,14 +21,16 @@ ENV SHELL=/bin/bash
 
 RUN git clone https://github.com/NVIDIA/TensorRT-LLM.git -b rel /TensorRT-LLM
 RUN git clone https://github.com/triton-inference-server/tensorrtllm_backend.git -b rel /tensorrtllm_backend
+RUN pip3 install mpi4py huggingface_hub
 
 ########## /TRTLLM ##########
 
 # Set working directory
 WORKDIR /
 
-COPY builder/build_mistral_engine.sh /build_mistral_engine.sh
-RUN chmod +x /build_mistral_engine.sh
+COPY builder/build_llama_engine.sh /build_llama_engine.sh
+RUN chmod +x /build_llama_engine.sh
+
 
 # The base image comes with many system dependencies pre-installed to help you get started quickly.
 # Please refer to the base image's Dockerfile for more information before adding additional dependencies.
@@ -56,8 +58,12 @@ ADD triton_model_repo /triton_model_repo
 RUN cp -r /triton_model_repo /tensorrtllm_backend/triton_model_repo
 
 #CMD exec /bin/sh -c "trap : TERM INT; sleep 9999999999d & wait"
-CMD ./build_mistral_engine.sh && ulimit -n 1000000 && nohup python3 /tensorrtllm_backend/scripts/launch_triton_server.py --world_size=1 --model_repo=/tensorrtllm_backend/triton_model_repo && python3 -u handler.py 
-#ENTRYPOINT ["/bin/bash", "-c", "/build_mistral_engine.sh"]
+
+#CMD ./build_llama_engine.sh && ulimit -n 1000000 && nohup tritonserver --model-repository /triton_model_repo  && python3 -u handler.py 
+
+RUN chmod +x /start.sh
+CMD /start.sh
+#ENTRYPOINT ["/bin/bash", "-c", "/build_mistonstonserver --model-repository /triton_model_repoerver --model-repository /triton_model_repotral_engine.sh"]
 #/tensorrtllm_backend/scripts/launch_triton_server.py --world_size=1 --model_repo=/tensorrtllm_│azureuser@artem-build:~/worker-tensorrt-llm/builder$ ^C
 #backend/triton_model_repo
 

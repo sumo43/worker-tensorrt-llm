@@ -85,10 +85,6 @@ class OpenAITRTEngine:
 
         batch = []
         batch_token_counter = 0
-        #batch_size = BatchSize(1, 1, 2) #self.default_batch_size, self.min_batch_size, self.batch_size_growth_factor)
-
-        #print("finish handle")
-        #print(response_generator)
 
         try:
             async for chunk_str in response_generator:
