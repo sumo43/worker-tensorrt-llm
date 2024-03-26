@@ -63,16 +63,6 @@ class OpenAITRTEngine:
             request_class = CompletionRequest
 
         #generator_function = handle
-        """
-        print("OPENAI REQUEST")
-        print(openai_request)
-        print("########")
-        print(req)
-        print("############# INPUT ############")
-        print(req.openai_input)
-        print(req.__dict__)
-        print(req.openai_input.__dict__)
-        """
 
         request = request_class(
                 **req.openai_input
@@ -87,6 +77,11 @@ class OpenAITRTEngine:
         batch_token_counter = 0
 
         try:
+
+            batch = []
+            batch_token_counter = 0
+            batch_size = BatchSize(50, 50, 1)
+
             async for chunk_str in response_generator:
                 #print("inner loop")
                 if "data" in chunk_str:
@@ -103,6 +98,15 @@ class OpenAITRTEngine:
 
                     yield data
 
+                    batch.append(data)
+                    batch_token_counter += 1
+                    if batch_token_counter >= batch_size.current_batch_size:
+                        batch = "".join(batch)
+                        yield batch
+                        batch = []
+                        batch_token_counter = 0
+                        batch_size.update()
+        
                     # dont do the batch stuff for now
                     #if batch_token_counter >= batch_size.current_batch_size:
                     #    if self.raw_openai_output:

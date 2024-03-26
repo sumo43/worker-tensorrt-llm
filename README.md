@@ -67,4 +67,14 @@ If using the input validation utility from the runpod python package, create a `
 
 ## 🔗 | Links
 
+## Building TensorRT-LLM Engine
+
+1. Use build-script.sh to build the engine on a Pod that's the same GPU type as your serverless configuration
+
+## Downloading model from Huggingface (recommended)
+(todo)
+
+## Pre-baked model
+(todo)
+
 🐳 [Docker Container](https://hub.docker.com/r/runpod/serverless-hello-world)

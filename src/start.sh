@@ -1,8 +1,7 @@
 #!/bin/bash
 
-#echo "Building Triton server"
-#chmod +x build_llama_engine.sh
-#./build_llama_engine.sh
+chmod +x build_llama_engine.sh
+./build_llama_engine.sh
 
 echo "Starting Triton server"
 ulimit -n 1000000

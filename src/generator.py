@@ -26,7 +26,7 @@ from utils import JobInput
 
 from transformers import AutoTokenizer
 
-tokenizer = AutoTokenizer.from_pretrained("bigscience/bloom-560m")
+tokenizer = AutoTokenizer.from_pretrained("mistralai/Mistral-7B-v0.1")
 
 model_name = "pytorch"
 shape = [1]
@@ -200,9 +200,9 @@ async def chat_completion_stream_generator(model_name, inputs, outputs, request_
     # Send the finish response for each request.n only once
     # prompt_tokens = len(res.prompt_token_ids)
 
-    prompt_tokens = 60
-    completion_tokens = 10
-    total_tokens = 70
+    prompt_tokens = 1000
+    completion_tokens = 1000
+    total_tokens = 2000
     final_usage = UsageInfo(
         prompt_tokens=prompt_tokens,
         completion_tokens=completion_tokens,
@@ -248,19 +248,10 @@ async def handle(job):
                 tokenize=False,
                 add_generation_prompt=request.add_generation_prompt)
 
-    print("\n\n\n\n\n\n\n\n\n\n\n\n\n\n")
-
-    print(request)
-
-    print("\n\n\n\n\n\n")
-
     STREAMING=False
 
-    tokenizer = AutoTokenizer.from_pretrained("bigscience/bloom-560m",
-                                                  legacy=False,
-                                                  padding_side='left',
-                                                  trust_remote_code=True)
     text = prompt
+
     tokenizer.pad_token = tokenizer.eos_token
     pad_id = tokenizer.encode(tokenizer.pad_token,
                               add_special_tokens=False)[0]

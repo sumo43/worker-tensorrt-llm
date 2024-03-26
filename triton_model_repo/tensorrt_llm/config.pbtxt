@@ -26,15 +26,15 @@
 
 name: "tensorrt_llm"
 backend: "tensorrtllm"
-max_batch_size: 8 #${triton_max_batch_size}
+max_batch_size: 16  #${triton_max_batch_size}
 
 model_transaction_policy {
   decoupled: true #${decoupled_mode}
 }
 
 dynamic_batching {
-    preferred_batch_size: [ 8 ]
-    max_queue_delay_microseconds: 1000 
+    preferred_batch_size: [ 1, 2, 4, 8 ]
+    max_queue_delay_microseconds: 100 
 }
 
 input [

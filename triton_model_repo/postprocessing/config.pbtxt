@@ -26,7 +26,7 @@
 
 name: "postprocessing"
 backend: "python"
-max_batch_size: 8 #${triton_max_batch_size}
+max_batch_size: 16 #${triton_max_batch_size}
 input [
   {
     name: "TOKENS_BATCH"
@@ -92,7 +92,7 @@ output [
 parameters {
   key: "tokenizer_dir"
   value: {
-    string_value: "/volume/tokenizer" 
+    string_value: "/volume/engine" 
   }
 }
 
@@ -105,7 +105,7 @@ parameters {
 
 instance_group [
     {
-        count: 1        
+        count:  1
 	kind: KIND_CPU
     }
 ]

@@ -26,7 +26,7 @@
 
 name: "ensemble"
 platform: "ensemble"
-max_batch_size: 8 #${triton_max_batch_size}
+max_batch_size: 16  #${triton_max_batch_size}
 input [
   {
     name: "text_input"
